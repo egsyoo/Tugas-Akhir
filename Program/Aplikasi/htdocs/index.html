@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Sawah</title>
+    
+    <!-- Menghubungkan dengan pustaka Bootstrap untuk tampilan yang lebih rapi -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Menghubungkan dengan pustaka jQuery untuk pengolahan data secara dinamis -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <style>
+        /* Pengaturan tampilan latar belakang dan warna teks */
+        body {
+            background-color: #eef5f2;
+            color: #d9baba;
+            text-align: center;
+        }
+        
+        /* Pengaturan tampilan header */
+        .header {
+            background: rgb(198, 155, 97);
+            padding: 15px;
+            color: #000000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* Ukuran logo di header */
+        .logo {
+            height: 60px;
+        }
+        
+        /* Pengaturan tampilan kartu informasi */
+        .card {
+            background: rgb(238, 237, 206);
+            border-radius: 10px;
+            padding: 17px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.811);
+            color: #000000;
+            margin: 8px;
+            flex: 1;
+        }
+        
+        /* Pengaturan tampilan footer */
+        .footer {
+            background: rgb(198, 155, 97);
+            color: rgb(0, 0, 0);
+            text-align: center;
+            padding: 15px;
+            margin-top: 20px;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+        
+        /* Tata letak grid untuk menampilkan data */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+    </style>            
+</head>
+<body>
+    <!-- Bagian header dengan judul dan logo -->
+    <header class="header">
+        <h4 class="m-0">Monitoring Sawah</h4>
+        <img src="img/stikom.png" alt="Logo" class="logo">
+    </header>
+
+    <!-- Bagian utama yang akan menampilkan data -->
+    <div class="container mt-4">
+        <div class="grid-container" id="dataContainer">
+            <p>Memuat data...</p>
+        </div>
+    </div>
+
+    <!-- Bagian footer -->
+    <footer class="footer">
+        <p>&copy; 2025 Monitoring Sawah.</p>
+    </footer>
+
+    <script>
+        // Pemetaan ID perangkat ke nama petak sawah
+        const deviceMap = { "1": "Petak Sawah 1", "2": "Petak Sawah 2", "3": "Petak Sawah 3", "4": "Petak Sawah 4" };
+        
+        // Objek untuk menyimpan data masing-masing petak sawah
+        const sawahData = { "Petak Sawah 1": null, "Petak Sawah 2": null, "Petak Sawah 3": null, "Petak Sawah 4": null };
+
+        // Fungsi untuk mengambil data dari server
+        async function fetchData() {
+            try {
+                const response = await fetch("http://127.0.0.1/baca.php"); // Mengambil data dari server
+                if (!response.ok) throw new Error("Gagal mengambil data dari server"); // Jika gagal, lempar error
+                
+                const textData = await response.text(); // Mengambil teks dari respons
+                console.log("Data diterima:", textData); // Menampilkan data di konsol untuk debugging
+                
+                const jsonData = JSON.parse(textData.replace("Isi pesan: ", "")); // Mengubah data teks menjadi format JSON
+                
+                const petak = deviceMap[jsonData.device]; // Mencocokkan ID perangkat dengan nama petak sawah
+                
+                if (petak && sawahData.hasOwnProperty(petak)) {
+                    // Jika data sesuai dengan petak sawah yang ada, simpan datanya
+                    sawahData[petak] = {
+                        soilMoisture: jsonData.soilMoisture, // Kelembaban tanah
+                        waterHeight: jsonData.waterHeight,   // Ketinggian air
+                        gateStatus: jsonData.gateStatus,     // Status pintu air
+                        timestamp: new Date().toLocaleString(), // Waktu pembaruan data
+                    };
+                }
+                
+                updateUI(); // Memperbarui tampilan UI dengan data terbaru
+            } catch (error) {
+                console.error("Terjadi kesalahan saat mengambil data:", error);
+                document.getElementById("dataContainer").innerHTML = '<p class="text-danger">Gagal memuat data. Periksa koneksi!</p>';
+            }
+        }
+
+        // Fungsi untuk memperbarui tampilan UI dengan data terbaru
+        function updateUI() {
+            const container = document.getElementById("dataContainer");
+            container.innerHTML = ""; // Mengosongkan kontainer sebelum memperbarui
+            
+            for (const petak in sawahData) {
+                const data = sawahData[petak];
+                const card = document.createElement("div"); // Membuat elemen div untuk setiap kartu informasi
+                card.className = "card p-3";
+                
+                // Menentukan isi kartu berdasarkan apakah ada data atau tidak
+                card.innerHTML = data ? `
+                    <h2>${petak}</h2>
+                    <p>Kelembaban Tanah: <strong>${data.soilMoisture}</strong></p>
+                    <p>Ketinggian Air: <strong>${data.waterHeight} cm</strong></p>
+                    <p>Status Pintu Air: <strong>${data.gateStatus}</strong></p>
+                    <p><small>Waktu: <strong>${data.timestamp}</strong></small></p>
+                ` : `<h2>${petak}</h2><p class="text-center">Tidak ada data.</p>`;
+                
+                container.appendChild(card); // Menambahkan kartu ke dalam kontainer
+            }
+        }
+
+        // Memanggil fungsi fetchData setiap 1 detik untuk memperbarui data secara berkala
+        setInterval(fetchData, 1000);
+    </script>
+</body>
+</html>

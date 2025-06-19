@@ -1,0 +1,1 @@
+{"device":2,"soilMoisture":32,"waterHeight":6,"gateStatus":"Open","timestamp":"18:25:26:161","RSSI":-55,"SNR":-1}
